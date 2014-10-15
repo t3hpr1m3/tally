@@ -1,0 +1,5 @@
+.bundle
+.vagrant
+node_modules
+*.log
+
