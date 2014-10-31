@@ -2,7 +2,7 @@
  * Module dependencies
  */
 var util = require('util'),
-	ValidationError = require('../lib/errors').ValidationError,
+  ValidationError = require('../lib/errors').ValidationError,
   elasticsearch = require('../lib/elasticsearch');
 
 /**
@@ -10,15 +10,15 @@ var util = require('util'),
  *
  * @param {Object} data
  */
-var Usage = function(data) {
+function Usage(data) {
   this._id = null;
-	this.customer_id = data.customer_id;
-	this.from = data.from;
-	this.to = data.to;
-	this.text = data.text;
+  this.customer_id = data.customer_id;
+  this.from = data.from;
+  this.to = data.to;
+  this.text = data.text;
   this.token_count = 0;
   this.created_at = null;
-	this.errors = {};
+  this.errors = {};
 }
 
 /**
@@ -28,32 +28,32 @@ var Usage = function(data) {
  * @param {function} cb
  */
 Usage.prototype.validate = function(cb) {
-	function addError(obj, attr, type, message, value) {
-		obj.errors[attr] = {
-			type: type,
-			message: message,
-			value: value
-		};
-	}
-	this.errors = {};
-	if (this.customer_id == null) {
-		addError(this, 'customer_id', 'required', 'customer_id is required', this.customer_id);
-	}
-	if (this.from == null) {
-		addError(this, 'from', 'required', 'from is required', this.from);
-	}
-	if (this.to == null) {
-		addError(this, 'to', 'required', 'to is required', this.to);
-	}
-	if (this.text == null) {
-		addError(this, 'text', 'required', 'text is required', this.text);
-	}
+  function addError(obj, attr, type, message, value) {
+    obj.errors[attr] = {
+      type: type,
+      message: message,
+      value: value
+    };
+  }
+  this.errors = {};
+  if (this.customer_id == null) {
+    addError(this, 'customer_id', 'required', 'customer_id is required', this.customer_id);
+  }
+  if (this.from == null) {
+    addError(this, 'from', 'required', 'from is required', this.from);
+  }
+  if (this.to == null) {
+    addError(this, 'to', 'required', 'to is required', this.to);
+  }
+  if (this.text == null) {
+    addError(this, 'text', 'required', 'text is required', this.text);
+  }
 
-	if (Object.getOwnPropertyNames(this.errors).length === 0) {
-		cb(null);
-	} else {
-		cb(new ValidationError(this));
-	}
+  if (Object.getOwnPropertyNames(this.errors).length === 0) {
+    cb(null);
+  } else {
+    cb(new ValidationError(this));
+  }
 };
 
 /**
@@ -99,11 +99,11 @@ module.exports = Usage;
 var mongoose = require('mongoose');
 
 var usageSchema = new mongoose.Schema({
-	customer_id: { type: String, required: true },
-	from: { type: String, required: true },
-	to: { type: String, required: true },
-	text: { type: String, required: true },
-	createdAt: { type: Date, default: Date.now }
+  customer_id: { type: String, required: true },
+  from: { type: String, required: true },
+  to: { type: String, required: true },
+  text: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('Usage', usageSchema);
