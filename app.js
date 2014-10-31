@@ -2,6 +2,7 @@
  * Module dependencies
  */
 var express		= require('express'),
+	morgan		= require('morgan'),
 	bodyParser	= require('body-parser'),
 	config		= require('./config'),
 	auth		= require('./lib/auth'),
@@ -9,6 +10,7 @@ var express		= require('express'),
 
 
 // Setup middleware
+app.use(morgan('combined'));
 app.use(bodyParser.json());
 
 // Load up routes

@@ -3,8 +3,8 @@
  */
 var express = require('express'),
 	router = module.exports = express.Router(),
-	usages = require('./api/usages'),
-	auth = require('../lib/auth');
+	usages = require('./usages'),
+	auth = require('../../lib/auth');
 
 /**
  * Middleware for validating auth tokens

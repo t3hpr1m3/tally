@@ -42,6 +42,7 @@ Vagrant.configure('2') do |config|
   config.vm.synced_folder '.', '/vagrant', type: 'nfs'
   config.vm.network :private_network, ip: IP_ADDRESS_PREFIX + '30'
   config.vm.network 'forwarded_port', guest: 3003, host: 3003
+  config.vm.network 'forwarded_port', guest: 9200, host: 9201
 
   config.vm.provision :chef_solo do |chef|
     chef.custom_config_path = 'Vagrantfile.chef'

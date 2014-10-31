@@ -3,42 +3,46 @@
  */
 var express = require('express'),
 	router = module.exports = express.Router(),
-	auth = require('../../lib/auth');
+	auth = require('../../lib/auth'),
+	models = require('../../models'),
+	errors = require('../../lib/errors');
 
-var validateParams = function(req, res, next) {
-	var errors = [];
-	if (req.body.customer_id == null) {
-		errors.push('customer_id is required');
-	}
-	if (req.body.from == null) {
-		errors.push('from is required');
-	}
-	if (req.body.to == null) {
-		errors.push('to is required');
-	}
-	if (req.body.text == null) {
-		errors.push('text is required');
-	}
-	if (errors.length > 0) {
-		res.status(400).send({ errors: errors});
-	} else {
-		next();
-	}
-};
+router.post('/', function(req, res, next) {
+	var usage = new models.Usage(req.body);
 
-router.post('/', validateParams);
-router.post('/', function(req, res) {
-	var customer_id = req.body.customer_id;
-	var from = req.body.from;
-	var to = req.body.to;
-	var text = req.body.text;
-	var auth_token = auth.extractToken(req);
-
-	auth.getCustomer(auth_token, customer_id, function(err, customer) {
-		if (customer != null) {
-			res.json({ status: 0, message: "You Posted!" });
+	auth.getCustomer(req.authToken, usage.customer_id, function(err, customer) {
+		if (err) {
+			res.status(500).send({ error: 'Unable to authenticate.' });
 		} else {
-			res.status(400).send({ error: 'Invalid customer_id' });
+			if (customer == null) {
+				res.status(422).send({
+          error: {
+            message: errors.api.invalid_customer
+          }
+        });
+			} else {
+				usage.save(function(err) {
+					if (err) {
+						if (err.name === 'ValidationError') {
+							res.status(400).send({
+                error: {
+                  message: errors.api.validation_failed,
+                  errors: err.errors
+                }
+              });
+						} else {
+							next(err);
+						}
+					} else {
+						res.status(201).send( usage );
+					}
+				});
+			}
 		}
 	});
+});
+
+router.get('/', function(req, res) {
+	var authToken = auth.extractToken(req);
+	res.json({ status: 0, message: "Data!" });
 });

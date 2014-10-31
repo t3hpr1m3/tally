@@ -4,9 +4,11 @@ var request = require('supertest'),
 	nock = require('nock'),
 	usages = require('../routes/api/usages'),
 	bodyParser = require('body-parser'),
-	should = require('should');
+	should = require('should'),
+  auth = require('../lib/auth');
 
 var reqHeaders = function(obj) {
+	if (typeof obj === 'undefined') { obj = {}; }
 	return {
 		'Content-Type': obj['Content-Type'] || 'application/json',
 		'Accept': obj['application/json'] || 'application/json',
@@ -17,24 +19,26 @@ var reqHeaders = function(obj) {
 describe('POST /api/usages', function() {
 	var app = express();
 	app.use(bodyParser.json());
+  app.use(auth.authenticate);
 	app.use('/', usages);
-	beforeEach(function() {
-		nock('https://' + config.auth_host)
+	beforeEach(function(done) {
+    nock('https://' + config.authHost)
+      .get('/auth/validate?token=valid')
+      .reply(200, '{}');
+		nock('https://' + config.authHost)
 			.get('/customers?token=valid')
 			.reply(200, '[{"id": "12345"}]');
+    done();
 	});
 
-	it('validates input', function(done) {
+	it('requires a customer id', function(done) {
 		request(app)
 			.post('/')
-			.set(reqHeaders({'Authorization': 'foobar'}))
+			.set(reqHeaders())
 			.send('{}')
-			.expect(400)
+			.expect(422)
 			.end(function(err, res) {
-				res.body.errors.indexOf('customer_id is required').should.be.greaterThan(-1);
-				res.body.errors.indexOf('from is required').should.be.greaterThan(-1);
-				res.body.errors.indexOf('to is required').should.be.greaterThan(-1);
-				res.body.errors.indexOf('text is required').should.be.greaterThan(-1);
+				res.body.error.should.have.property('message', 'Invalid customer id');
 				done();
 			});
 	});
@@ -42,21 +46,36 @@ describe('POST /api/usages', function() {
 	it('requires a valid customer_id', function(done) {
 		request(app)
 			.post('/')
-			.set(reqHeaders({}))
-			.send('{"customer_id": "54321", "from": "en", "to": "es", "text": "Hello World"}')
-			.expect(400, { error: 'Invalid customer_id' }, done);
+			.set(reqHeaders())
+			.send('{ "customer_id": "54321", "from": "en", "to": "es", "text": "Hello World" }')
+			.expect(422)
+			.end(function(err, res) {
+				res.body.error.should.have.property('message', 'Invalid customer id');
+				done();
+			});
 	});
 
-	it('responds with the correct message', function(done) {
+	it('validates input', function(done) {
+		request(app)
+			.post('/')
+			.set(reqHeaders())
+			.send('{ "customer_id": "12345" }')
+			.expect(422)
+			.end(function(err, res) {
+				res.body.error.should.have.property('message', 'Validation failed');
+				done();
+			});
+	});
+
+	it('responds correctly', function(done) {
 		request(app)
 			.post('/')
 			.set(reqHeaders({}))
-			.send('{"customer_id": "12345", "from": "en", "to": "es", "text": "Hello World"}')
-			.expect(200)
+			.send('{ "customer_id": "12345", "from": "en", "to": "es", "text": "Hello World" }')
+			.expect(201)
 			.end(function (err, res) {
 				should.not.exist(err);
-				res.body.status.should.equal(0);
-				res.body.message.should.equal('You Posted!');
+				res.body.should.have.property('id');
 				done();
 			});
 	});

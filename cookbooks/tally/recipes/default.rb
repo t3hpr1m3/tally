@@ -6,6 +6,7 @@ include_recipe 'nodejs'
 include_recipe 'java'
 include_recipe 'elasticsearch'
 include_recipe 'elasticsearch::plugins'
+include_recipe 'mongodb'
 
 apt_package 'exuberant-ctags'
 apt_package 'vim-nox'

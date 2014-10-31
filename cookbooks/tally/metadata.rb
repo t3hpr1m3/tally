@@ -8,4 +8,5 @@ depends 'java'
 depends 'openssh'
 depends 'nodejs'
 depends 'vim'
+depends 'mongodb'
 
