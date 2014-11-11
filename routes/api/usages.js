@@ -1,11 +1,14 @@
 /**
  * Module dependencies.
  */
-var express = require('express'),
-  router = module.exports = express.Router(),
-  auth = require('../../lib/auth'),
-  models = require('../../models'),
-  errors = require('../../lib/errors');
+var rfr = require('rfr'),
+    express = require('express'),
+    moment = require('moment');
+    router = module.exports = express.Router();
+
+var auth = rfr('lib/auth'),
+    models = rfr('models'),
+    errors = rfr('lib/errors');
 
 router.post('/', function(req, res, next) {
   var usage = new models.Usage(req.body);
@@ -24,7 +27,7 @@ router.post('/', function(req, res, next) {
         usage.save(function(err) {
           if (err) {
             if (err.name === 'ValidationError') {
-              res.status(400).send({
+              res.status(400).json({
                 error: {
                   message: errors.api.validation_failed,
                   errors: err.errors
@@ -44,5 +47,25 @@ router.post('/', function(req, res, next) {
 
 router.get('/', function(req, res) {
   var authToken = auth.extractToken(req);
-  res.json({ status: 0, message: "Data!" });
+  var options = {
+  };
+  models.Usage.search({}, function(err, usages) {
+    if (err) {
+      next(err);
+    } else {
+      res.status(200).json(usages);
+    }
+  });
+});
+
+router.get('/summary', function(req, res) {
+  var authToken = auth.extractToken(req);
+  var options = {};
+  models.Usage.summary(options, function(err, s) {
+    if (err) {
+      next(err);
+    } else {
+      res.status(200).json(s);
+    }
+  });
 });

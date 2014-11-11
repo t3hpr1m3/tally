@@ -1,9 +1,12 @@
 /**
  * Module dependencies
  */
-var util = require('util'),
-  ValidationError = require('../lib/errors').ValidationError,
-  elasticsearch = require('../lib/elasticsearch');
+var rfr = require('rfr'),
+    util = require('util'),
+    moment = require('moment');
+
+var ValidationError = rfr('lib/errors').ValidationError,
+    elasticsearch = rfr('lib/elasticsearch');
 
 /**
  * Constructor
@@ -85,6 +88,7 @@ Usage.prototype.save = function save(cb) {
 Usage.prototype.toJSON = function() {
   return {
     id: this._id,
+    customer_id: this.customer_id,
     text: this.text,
     from: this.from,
     to: this.to,
@@ -92,6 +96,81 @@ Usage.prototype.toJSON = function() {
     created_at: this.created_at
   };
 };
+
+Usage.search = function search(options, cb) {
+  elasticsearch.client().search({
+    index: 'usages',
+    type: 'usage',
+    body: {
+      sort: [
+        { _id: { 'order': 'asc' } }
+      ]
+    }
+  }, function(err, records) {
+    if (err) {
+      cb(err);
+    } else {
+      var usages = [];
+      var u = null;
+      records.hits.hits.forEach(function(r) {
+        u = new Usage({});
+        u._id = r._id;
+        u.customer_id = r._source.customer_id;
+        u.from = r._source.from;
+        u.to = r._source.to;
+        u.text = r._source.text;
+        u.token_count = r._source.token_count;
+        usages.push(u);
+      });
+      cb(null, usages);
+    }
+  });
+};
+
+Usage.summary = function summary(options, cb) {
+  elasticsearch.client().search(
+    {
+      index: 'usages',
+      body: {
+        query: {
+          filtered: {
+            filter: {
+              range: {
+                created_at: {
+                  from: moment().startOf('month').format()
+                }
+              }
+            }
+          }
+        },
+        aggs: {
+          group_by_customer_id: {
+            sort: [ { customer_id: { order: 'asc' } } ],
+            terms: { field: 'customer_id' },
+            aggs: { total_tokens: { sum: { field: 'token_count' } } }
+          }
+        }
+      }
+    }, function(err, records) {
+      if (err) {
+        cb(err);
+      } else {
+        var summary = {};
+        summary.start_date = moment().startOf('month').format(),
+        summary.end_date = moment().format(),
+        summary.usages = [];
+        records.aggregations.group_by_customer_id.buckets.forEach(function(r) {
+          summary.usages.push({
+            customer_id: r.key,
+            requests: parseInt(r.doc_count),
+            token_count: parseInt(r.total_tokens.value)
+          });
+        });
+
+        cb(null, summary);
+      }
+  });
+}
 
 module.exports = Usage;
 

@@ -1,4 +1,5 @@
-var routes = module.exports = {};
+var rfr = require('rfr'),
+    routes = module.exports = {};
 
-routes.api = require('./api');
+routes.api = rfr('routes/api');
 

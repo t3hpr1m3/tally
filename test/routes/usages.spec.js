@@ -1,11 +1,20 @@
-var request = require('supertest'),
+/**
+ * Module dependencies.
+ */
+var rfr = require('rfr'),
+    request = require('supertest'),
     express = require('express'),
-    config = require('../config'),
     nock = require('nock'),
-    usages = require('../routes/api/usages'),
     bodyParser = require('body-parser'),
     should = require('should'),
-    auth = require('../lib/auth');
+    url = require('url'),
+    sinon = require('sinon'),
+    moment = require('moment');
+
+var models = rfr('models'),
+    usages = rfr('routes/api/usages'),
+    auth = rfr('lib/auth'),
+    elasticsearch = rfr('lib/elasticsearch');
 
 var reqHeaders = function(obj) {
   if (typeof obj === 'undefined') { obj = {}; }
@@ -16,17 +25,29 @@ var reqHeaders = function(obj) {
   }
 };
 
+function buildAuthURL(path, token) {
+  var urlObj = url.parse(auth.authURL(path));
+  if (urlObj.query == null) {
+    urlObj.query = {};
+  }
+  urlObj.query.token = token;
+  return url.parse(url.format(urlObj));
+}
+
 describe('POST /api/usages', function() {
-  var app = express();
+  var app = express(),
+      validateURL = buildAuthURL('/auth/validate', 'valid'),
+      customersURL = buildAuthURL('/customers', 'valid');
+
   app.use(bodyParser.json());
   app.use(auth.authenticate);
   app.use('/', usages);
   beforeEach(function(done) {
-    nock(auth.authURL('/auth/validate'https://' + config.authHost)
-      .get('/auth/validate?token=valid')
+    nock(validateURL.protocol + '//' + validateURL.host)
+      .get(validateURL.path)
       .reply(200, '{}');
-    nock('https://' + config.authHost)
-      .get('/customers?token=valid')
+    nock(customersURL.protocol + '//' + customersURL.host)
+      .get(customersURL.path)
       .reply(200, '[{"id": "12345"}]');
     done();
   });
@@ -76,6 +97,50 @@ describe('POST /api/usages', function() {
       .end(function (err, res) {
         should.not.exist(err);
         res.body.should.have.property('id');
+        done();
+      });
+  });
+});
+
+describe('GET /api/usages/summary', function() {
+  var app = express(),
+      validateURL = buildAuthURL('/auth/validate', 'valid');
+
+  app.use(bodyParser.json());
+  app.use(auth.authenticate);
+  app.use('/', usages);
+  var sandbox = null;
+  beforeEach(function(done) {
+    nock(validateURL.protocol + '//' + validateURL.host)
+      .get(validateURL.path)
+      .reply(200, '{}');
+    sandbox = sinon.sandbox.create();
+    sandbox.stub(models.Usage, 'summary').callsArgWith(1, null, {
+      start_date: moment().startOf('month').format(),
+      end_date: moment().format(),
+      usages: [
+        { customer_id: '12345', requests: 2, token_count: 4 }
+      ]
+    });
+    done();
+  });
+  afterEach(function(done) {
+    sandbox.restore();
+    done();
+  });
+
+  it('returns usage statistics by customer', function(done) {
+    request(app)
+      .get('/summary')
+      .set(reqHeaders())
+      .expect(200)
+      .end(function(err, res) {
+        var summary = res.body;
+        summary.should.have.property('start_date', moment().startOf('month').format());
+        summary.should.have.property('end_date', moment().format());
+        summary.should.have.property('usages', [
+          { 'customer_id': '12345', 'requests': 2, 'token_count': 4 }
+        ]);
         done();
       });
   });

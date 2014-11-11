@@ -1,12 +1,13 @@
 /**
  * Module dependencies.
  */
-var should = require('should'),
-nock = require('nock'),
-express = require('express'),
-request = require('supertest'),
-config = require('../../config'),
-auth = require('../../lib/auth');
+var rfr = require('rfr'),
+    should = require('should'),
+    nock = require('nock'),
+    express = require('express'),
+    request = require('supertest'),
+    config = require('../../config'),
+    auth = require('../../lib/auth');
 
 describe('auth', function() {
   describe('authentication', function() {

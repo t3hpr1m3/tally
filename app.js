@@ -1,12 +1,13 @@
 /**
  * Module dependencies
  */
-var express   = require('express'),
-  morgan    = require('morgan'),
-  bodyParser  = require('body-parser'),
-  config    = require('./config'),
-  auth    = require('./lib/auth'),
-  app     = module.exports = express();
+var rfr = require('rfr'),
+    express = require('express'),
+    morgan = require('morgan'),
+    bodyParser = require('body-parser'),
+    config = rfr('config'),
+    auth = rfr('lib/auth'),
+    app = module.exports = express();
 
 
 // Setup middleware

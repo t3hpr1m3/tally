@@ -1,10 +1,11 @@
 /**
  * Module dependencies.
  */
-var express = require('express'),
-  router = module.exports = express.Router(),
-  usages = require('./usages'),
-  auth = require('../../lib/auth');
+var rfr = require('rfr'),
+    express = require('express'),
+    router = module.exports = express.Router(),
+    usages = rfr('routes/api/usages'),
+    auth = rfr('lib/auth');
 
 /**
  * Middleware for validating auth tokens

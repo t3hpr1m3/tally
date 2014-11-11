@@ -1,3 +1,4 @@
-var models = module.exports = {};
+var rfr = require('rfr'),
+    models = module.exports = {};
 
-models.Usage = require('./usage');
+models.Usage = rfr('models/usage');
